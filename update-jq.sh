@@ -66,9 +66,6 @@ clean_up () {
   esac
 }
 
-# Run clean_up function on exit
-trap clean_up EXIT
-
 # PATH Check
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
@@ -87,10 +84,11 @@ else
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
   tmp_dir="$(mktemp -d /tmp/jq.XXXXXXXX)"
+  cd "${tmp_dir}" || exit
 fi
 
-# Version Check
-cd "${tmp_dir}" || exit
+# Run clean_up function on exit
+trap clean_up EXIT
 
 # Download
 printf '%s\n' "[INFO] Downloading the jq binary and verification files"
