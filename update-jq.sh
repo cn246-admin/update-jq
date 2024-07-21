@@ -10,30 +10,18 @@ code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
 code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 # OS Check
-case "$(uname -s)" in
-  "Darwin")
-      case "$(uname -p)" in
-        "arm")
-          jq_binary="jq-macos-arm64" ;;
-        *)
-          jq_binary="jq-macos-amd64" ;;
-      esac
-    ;;
-  "Linux")
-      case "$(uname -m)" in
-        "x86_64")
-          jq_binary="jq-linux-amd64" ;;
-        "arm"*)
-          jq_binary="jq-linux-arm64" ;;
-        *)
-          code_red "[ERROR] Script not configured for $(uname -m)"
-          exit 1 ;;
-      esac
-    ;;
+archi=$(uname -sm)
+case "$archi" in
+  Darwin\ arm64)
+    jq_binary="jq-macos-arm64" ;;
+  Darwin\ x86_64)
+    jq_binary="jq-macos-amd64" ;;
+  Linux\ armv[5-9]* | Linux\ aarch64*)
+    jq_binary="jq-linux-arm64" ;;
+  Linux\ *64)
+    jq_binary="jq-linux-amd64" ;;
   *)
-    code_red "[ERROR] Unsupported OS. Exiting"
-    exit 1
-    ;;
+    code_red "[ERROR] Unsupported OS. Exiting"; exit 1 ;;
 esac
 
 # Variables
