@@ -24,30 +24,28 @@ jq_man="jq.1"
 
 sum_file="sha256sum.txt"
 
-
-# FUNCTIONS
-# delete temporary install files
+# Define funciton to delete temporary install files
 clean_up () {
-  case "${2}" in
+  case "${1}" in
     [dD]|[dD]ebug)
-      printf '%s\n' "Exiting without deleting files from ${tmp_dir}"
-      exit "${1}"
+      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}"
       ;;
     *)
-      printf '%s\n' "Cleaning up install files"
+      printf '%s\n' "[INFO] Cleaning up install files"
       cd && rm -rf "${tmp_dir}"
-      exit "${1}"
       ;;
   esac
 }
 
-# colored output
+# Colored output
 code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
 code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
 code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
+# Run clean_up function on exit
+trap clean_up EXIT
 
-# OS CHECK
+# OS Check
 case "$(uname -s)" in
   "Darwin")
       case "$(uname -p)" in
@@ -64,57 +62,48 @@ case "$(uname -s)" in
     ;;
   *)
     code_red "[ERROR] Unsupported OS. Exiting"
-    clean_up 1
+    exit 1
 esac
 
-
-# PATH CHECK
+# PATH Check
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
   *)
     code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
     code_red "Add ${bin_dir} to PATH or select another directory to install to"
-    clean_up 1
+    exit 1
     ;;
 esac
 
-
-# VERSION CHECK
+# Version Check
 cd "${tmp_dir}" || exit
 
 if [ "${jq_version}" = "${jq_installed_version}" ]; then
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
   code_yel "[INFO] Already using latest version. Exiting."
-  clean_up 0
+  exit
 else
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
 fi
 
-
-# DOWNLOAD
+# Download
 printf '%s\n' "Downloading the jq binary and verification files"
 curl -sL -o "${tmp_dir}/${jq_binary}" "${jq_url}/${jq_binary}"
 curl -sL -o "${tmp_dir}/${sum_file}" "${jq_url}/${sum_file}"
 
-
-# VERIFY
 # Verify shasum
 printf '%s\n' "Verifying ${jq_binary}"
 if ! shasum -qc --ignore-missing "${sum_file}"; then
   code_red "[ERROR] Problem with checksum!"
-  clean_up 1
+  exit 1
 fi
 
-
-# PREPARE
 # Create directories
 [ ! -d "${bin_dir}" ] && install -m 0700 -d "${bin_dir}"
 [ ! -d "${man_dir}" ] && install -m 0700 -d "${man_dir}"
 
-
-# INSTALL
 # Install jq binary
 if [ -f "${tmp_dir}/${jq_binary}" ]; then
   mv "${tmp_dir}/${jq_binary}" "${bin_dir}/jq"
@@ -126,13 +115,8 @@ printf '%s\n' "Installing jq man page"
 curl -s -o "${man_dir}/${jq_man}" "${jq_man_url}"
 chmod 0600 "${man_dir}/${jq_man}"
 
-
 # VERSION CHECK
 code_grn "Done!"
 code_grn "Installed Version: $(jq --version)"
-
-
-# CLEAN UP
-clean_up 0
 
 # vim: ft=sh ts=2 sts=2 sw=2 sr et
