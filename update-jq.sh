@@ -4,10 +4,29 @@
 # Author: Chuck Nemeth
 # https://jqlang.github.io/jq/
 
+# OS Check
+case "$(uname -s)" in
+  "Darwin")
+      case "$(uname -p)" in
+        "arm")
+          jq_binary="jq-macos-arm64"
+          ;;
+        *)
+          jq_binary="jq-macos-amd64"
+          ;;
+      esac
+    ;;
+  "Linux")
+    jq_binary="jq-linux-amd64"
+    ;;
+  *)
+    code_red "[ERROR] Unsupported OS. Exiting"
+    exit 1
+esac
+
 # VARIABLES
 bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
-tmp_dir="$(mktemp -d /tmp/jq.XXXXXXXX)"
 
 if command -v jq >/dev/null; then
   jq_installed_version="$(jq --version)"
@@ -45,26 +64,6 @@ code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 # Run clean_up function on exit
 trap clean_up EXIT
 
-# OS Check
-case "$(uname -s)" in
-  "Darwin")
-      case "$(uname -p)" in
-        "arm")
-          jq_binary="jq-macos-arm64"
-          ;;
-        *)
-          jq_binary="jq-macos-amd64"
-          ;;
-      esac
-    ;;
-  "Linux")
-    jq_binary="jq-linux-amd64"
-    ;;
-  *)
-    code_red "[ERROR] Unsupported OS. Exiting"
-    exit 1
-esac
-
 # PATH Check
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
@@ -75,9 +74,6 @@ case :$PATH: in
     ;;
 esac
 
-# Version Check
-cd "${tmp_dir}" || exit
-
 if [ "${jq_version}" = "${jq_installed_version}" ]; then
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
@@ -86,15 +82,19 @@ if [ "${jq_version}" = "${jq_installed_version}" ]; then
 else
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
+  tmp_dir="$(mktemp -d /tmp/jq.XXXXXXXX)"
 fi
 
+# Version Check
+cd "${tmp_dir}" || exit
+
 # Download
-printf '%s\n' "Downloading the jq binary and verification files"
+printf '%s\n' "[INFO] Downloading the jq binary and verification files"
 curl -sL -o "${tmp_dir}/${jq_binary}" "${jq_url}/${jq_binary}"
 curl -sL -o "${tmp_dir}/${sum_file}" "${jq_url}/${sum_file}"
 
 # Verify shasum
-printf '%s\n' "Verifying ${jq_binary}"
+printf '%s\n' "[INFO] Verifying ${jq_binary}"
 if ! shasum -qc --ignore-missing "${sum_file}"; then
   code_red "[ERROR] Problem with checksum!"
   exit 1
@@ -106,17 +106,18 @@ fi
 
 # Install jq binary
 if [ -f "${tmp_dir}/${jq_binary}" ]; then
+  printf '%s\n' "[INFO] Installing the jq binary"
   mv "${tmp_dir}/${jq_binary}" "${bin_dir}/jq"
   chmod 0700 "${bin_dir}/jq"
 fi
 
 # Install man page
-printf '%s\n' "Installing jq man page"
+printf '%s\n' "[INFO] Installing the jq man page"
 curl -s -o "${man_dir}/${jq_man}" "${jq_man_url}"
 chmod 0600 "${man_dir}/${jq_man}"
 
 # VERSION CHECK
-code_grn "Done!"
+code_grn "[INFO] Done!"
 code_grn "Installed Version: $(jq --version)"
 
 # vim: ft=sh ts=2 sts=2 sw=2 sr et
