@@ -4,27 +4,39 @@
 # Author: Chuck Nemeth
 # https://jqlang.github.io/jq/
 
+# Colored output
+code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
+code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
+code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+
 # OS Check
 case "$(uname -s)" in
   "Darwin")
       case "$(uname -p)" in
         "arm")
-          jq_binary="jq-macos-arm64"
-          ;;
+          jq_binary="jq-macos-arm64" ;;
         *)
-          jq_binary="jq-macos-amd64"
-          ;;
+          jq_binary="jq-macos-amd64" ;;
       esac
     ;;
   "Linux")
-    jq_binary="jq-linux-amd64"
+      case "$(uname -m)" in
+        "x86_64")
+          jq_binary="jq-linux-amd64" ;;
+        "arm"*)
+          jq_binary="jq-linux-arm64" ;;
+        *)
+          code_red "[ERROR] Script not configured for $(uname -m)"
+          exit 1 ;;
+      esac
     ;;
   *)
     code_red "[ERROR] Unsupported OS. Exiting"
     exit 1
+    ;;
 esac
 
-# VARIABLES
+# Variables
 bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
 
@@ -47,19 +59,12 @@ sum_file="sha256sum.txt"
 clean_up () {
   case "${1}" in
     [dD]|[dD]ebug)
-      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}"
-      ;;
+      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}" ;;
     *)
       printf '%s\n' "[INFO] Cleaning up install files"
-      cd && rm -rf "${tmp_dir}"
-      ;;
+      cd && rm -rf "${tmp_dir}" ;;
   esac
 }
-
-# Colored output
-code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 # Run clean_up function on exit
 trap clean_up EXIT
@@ -70,8 +75,7 @@ case :$PATH: in
   *)
     code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
     code_red "Add ${bin_dir} to PATH or select another directory to install to"
-    exit 1
-    ;;
+    exit 1 ;;
 esac
 
 if [ "${jq_version}" = "${jq_installed_version}" ]; then
