@@ -9,6 +9,12 @@ code_grn() { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
 code_red() { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
 code_yel() { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
+# Define funciton to delete temporary install files
+clean_up() {
+  printf '%s\n' "[INFO] Cleaning up install files"
+  cd && rm -rf "${tmp_dir}"
+}
+
 # OS Check
 archi=$(uname -sm)
 case "$archi" in
@@ -28,7 +34,7 @@ esac
 bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
 
-if command -v jq >/dev/null; then
+if command -v jq >/dev/null 2>&1; then
   jq_installed_version="$(jq --version)"
 else
   jq_installed_version="Not Installed"
@@ -42,17 +48,6 @@ jq_man_url="https://raw.githubusercontent.com/jqlang/jq/master/jq.1.prebuilt"
 jq_man="jq.1"
 
 sum_file="sha256sum.txt"
-
-# Define funciton to delete temporary install files
-clean_up() {
-  case "${1}" in
-    [dD]|[dD]ebug)
-      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}" ;;
-    *)
-      printf '%s\n' "[INFO] Cleaning up install files"
-      cd && rm -rf "${tmp_dir}" ;;
-  esac
-}
 
 # PATH Check
 case :$PATH: in
@@ -72,11 +67,9 @@ else
   printf '%s\n' "Installed Verision: ${jq_installed_version}"
   printf '%s\n' "Latest Version: ${jq_version}"
   tmp_dir="$(mktemp -d /tmp/jq.XXXXXXXX)"
+  trap clean_up EXIT
   cd "${tmp_dir}" || exit
 fi
-
-# Run clean_up function on exit
-trap clean_up EXIT
 
 # Download
 printf '%s\n' "[INFO] Downloading the jq binary and verification files"
