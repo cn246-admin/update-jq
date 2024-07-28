@@ -5,9 +5,9 @@
 # https://jqlang.github.io/jq/
 
 # Colored output
-code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+code_grn() { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
+code_red() { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
+code_yel() { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 # OS Check
 archi=$(uname -sm)
@@ -44,7 +44,7 @@ jq_man="jq.1"
 sum_file="sha256sum.txt"
 
 # Define funciton to delete temporary install files
-clean_up () {
+clean_up() {
   case "${1}" in
     [dD]|[dD]ebug)
       printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}" ;;
