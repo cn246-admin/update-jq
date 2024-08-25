@@ -5,9 +5,9 @@
 # https://jqlang.github.io/jq/
 
 # Colored output
-code_grn() { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red() { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel() { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+code_err() { tput setaf 1; printf '%s\n' "$*" >&2; tput sgr0; }
+code_grn() { tput setaf 2; printf '%s\n' "$*"; tput sgr0; }
+code_yel() { tput setaf 3; printf '%s\n' "$*"; tput sgr0; }
 
 # Define funciton to delete temporary install files
 clean_up() {
@@ -27,7 +27,7 @@ case "$archi" in
   Linux\ *64)
     jq_binary="jq-linux-amd64" ;;
   *)
-    code_red "[ERROR] Unsupported OS. Exiting"; exit 1 ;;
+    code_err "[ERROR] Unsupported OS. Exiting"; exit 1 ;;
 esac
 
 # Variables
@@ -53,8 +53,8 @@ sum_file="sha256sum.txt"
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
   *)
-    code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
-    code_red "Add ${bin_dir} to PATH or select another directory to install to"
+    code_err "[ERROR] ${bin_dir} was not found in \$PATH!"
+    code_err "Add ${bin_dir} to PATH or select another directory to install to"
     exit 1 ;;
 esac
 
@@ -79,7 +79,7 @@ curl -sL -o "${tmp_dir}/${sum_file}" "${jq_url}/${sum_file}"
 # Verify shasum
 printf '%s\n' "[INFO] Verifying ${jq_binary}"
 if ! shasum -qc --ignore-missing "${sum_file}"; then
-  code_red "[ERROR] Problem with checksum!"
+  code_err "[ERROR] Problem with checksum!"
   exit 1
 fi
 
